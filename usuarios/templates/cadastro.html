@@ -1,9 +1,8 @@
 {% extends "base.html" %}
-
+{% load static %}
 
 {% block 'head' %}
-
-
+    <link rel="stylesheet" href="{% static 'usuarios/css/usuarios.css' %}">
 {% endblock 'head' %}
 
 {% block 'body' %}
@@ -17,7 +16,7 @@
                 <h1 class="text-logo">START.SE</h1>
                 <h1>Cadastre-se</h1>
                 <br>
-                <form action="#" >
+                <form action="{% url "cadastro" %}" method="POST">{% csrf_token %}
                     <label>Username</label>
                     <input type="text" class="form-control input-pers" name="username" placeholder="Digite seu username">
                     <br>
