@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from django.contrib import messages
+from django.contrib import messages, auth
 from django.contrib.messages import constants
 
-def cadastro(request):
+def cadastrar(request):
     if request.method == "GET":
-        return render(request, 'cadastro.html')
+        return render(request, 'cadastrar.html')
     elif request.method == "POST":
         username = request.POST.get('username')
         senha = request.POST.get('senha')
@@ -14,18 +14,43 @@ def cadastro(request):
 
     if senha != confirmar_senha:
         messages.add_message(request, constants.ERROR, 'Senha e confirmar senha estão diferentes')
-        return redirect('/usuarios/cadastro/')
+        return redirect('usuarios:cadastrar')
     
     if len(senha) < 5:
         messages.add_message(request, constants.WARNING, 'Senha precisa ter mais de 4 caracteres')
-        return redirect('/usuarios/cadastro/')
+        return redirect('usuarios:cadastrar')
     
     users = User.objects.filter(username=username)
 
-    if users.exists:
+    if users.exists():
         messages.add_message(request, constants.ERROR, 'Já existe um usuario com esse username')
-        return redirect('/usuarios/cadastro')
+        return redirect('usuarios:cadastrar')
     
-    user = User.objects.create_user(username=username, password=senha)
+    try:
+        user = User.objects.create_user(username=username, password=senha)
+        messages.add_message(request, constants.SUCCESS, 'Conta criada com sucesso')
+        return redirect('usuarios:login')
+    except:
+        messages.add_message(request, constants.ERROR, 'Erro na hora da criação tente novamente')
+        return redirect('usuarios:cadastrar')
 
-    return redirect('/usuarios/logar/')
+
+
+def login_view(request):
+    if request.method == 'GET':
+        return render(request, 'login.html')
+    
+    elif request.method == 'POST':
+        username = request.POST.get('username')
+        senha = request.POST.get('senha')
+
+        user = auth.authenticate(request, username=username, password=senha)
+
+        if user:
+            auth.login(request, user)
+            return redirect('/empresarios/cadastar_empresas/')
+        
+        messages.add_message(request, constants.ERROR, 'Usuário ou senha inválidos')
+        return redirect('usuarios:login')
+
+
