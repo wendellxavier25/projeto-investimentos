@@ -48,7 +48,7 @@ def login_view(request):
 
         if user:
             auth.login(request, user)
-            return redirect('/empresarios/cadastar_empresas/')
+            return redirect('empresas:cadastrar_empresa')
         
         messages.add_message(request, constants.ERROR, 'Usuário ou senha inválidos')
         return redirect('usuarios:login')
