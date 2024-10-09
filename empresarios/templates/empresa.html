@@ -71,7 +71,7 @@
 
                     <div class="documentos">
                         <h3>Anexar documentos</h3>
-                        <form action="#" method="POST" enctype='multipart/form-data'>{% csrf_token %}
+                        <form action="{% url 'empresas:add_doc' empresa.id %}" method="POST" enctype='multipart/form-data'>{% csrf_token %}
                             <label>Titulo</label>
                             <input type="text" name="titulo" class="form-control" placeholder="Titulo do documento">
                             <br>

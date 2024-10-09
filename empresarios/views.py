@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Empresas
+from .models import Empresas, Documento
 from django.contrib.messages import constants
 from django.contrib import messages
 
@@ -95,3 +95,24 @@ def empresa(request, id):
 
     if request.method == "GET":
         return render(request, 'empresa.html', {'empresa': empresa,})
+    
+
+def add_doc(request, id):
+    empresa = Empresas.objects.get(id=id)
+    titulo = request.POST.get('titulo')
+    arquivo = request.FILES.get('arquivo')
+    extensao = arquivo.name.split('.')
+
+    if extensao[1] != 'pdf':
+        messages.add_message(request, constants.ERROR, 'Envie um arquivo em PDF')
+        return redirect('empresas:empresa', id)
+
+    if not arquivo:
+        messages.add_message(request, constants.ERROR, 'Envie um arquivo')
+        return redirect('empresas:empresa', id)
+
+    documento = Documento(empresa=empresa, titulo=titulo, arquivo=arquivo)
+    documento.save()
+
+    messages.add_message(request, constants.SUCCESS, 'Arquivos salvos com sucesso')
+    return redirect('empresas:empresa', id)
