@@ -3,16 +3,16 @@
 }
 
 .table {
-    border-collapse: collapse !important;
+    border-collapse: collapse;
     width: 100%;
     
 }
 
 
 .cabecalho{
-    background-color: transparent !important;
+    background-color: transparent;
     border: none;
-    color: white !important;
+    color: white;
     text-align: center;
 }
 
@@ -20,8 +20,8 @@
     vertical-align: middle;
     padding: 24px;
     text-align: center;
-    background-color: var(--main-color) !important;
-    color: white !important;
+    background-color: var(--main-color);
+    color: white;
     border-bottom: 1px solid #6154a8;
 }
 
