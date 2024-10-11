@@ -1,5 +1,5 @@
-from django.shortcuts import render, redirect
-from .models import Empresas, Documento
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Empresas, Documento, Metricas
 from django.contrib.messages import constants
 from django.contrib import messages
 
@@ -93,8 +93,14 @@ def listar_empresas(request):
 def empresa(request, id):
     empresa = Empresas.objects.get(id=id)
 
+    if empresa.user != request.user:
+        messages.add_message(request, constants.ERROR, 'Essa empresa não é sua')
+        return redirect('empresas:listar_empresas')
+
+
     if request.method == "GET":
-        return render(request, 'empresa.html', {'empresa': empresa,})
+        documentos = Documento.objects.filter(empresa=empresa)
+        return render(request, 'empresa.html', {'empresa': empresa, 'documentos': documentos})
     
 
 def add_doc(request, id):
@@ -102,6 +108,10 @@ def add_doc(request, id):
     titulo = request.POST.get('titulo')
     arquivo = request.FILES.get('arquivo')
     extensao = arquivo.name.split('.')
+
+    if empresa.user != request.user:
+        messages.add_message(request, constants.ERROR, 'Essa empresa não é sua')
+        return redirect('empresas:listar_empresas')
 
     if extensao[1] != 'pdf':
         messages.add_message(request, constants.ERROR, 'Envie um arquivo em PDF')
@@ -116,3 +126,27 @@ def add_doc(request, id):
 
     messages.add_message(request, constants.SUCCESS, 'Arquivos salvos com sucesso')
     return redirect('empresas:empresa', id)
+
+
+def excluir_dc(request, id):
+    documento = get_object_or_404(Documento, id=id)
+
+    if documento.empresa.user != request.user:
+        messages.add_message(request, constants.ERROR, 'Esse documento não é seu')
+        return redirect('empresas:listar_empresas')
+    
+    documento.delete()
+    messages.add_message(request, constants.SUCCESS, 'Documento deletado com sucesso')
+    return redirect('empresas:empresa', documento.empresa.id)
+
+
+def add_metrica(request, id):
+    empresa = Empresas.objects.get(id=id)
+    titulo = request.POST.get("titulo")
+    valor = request.POST.get("valor")
+
+    metrica = Metricas(empresa=empresa, titulo=titulo, valor=valor)
+    metrica.save()
+
+    messages.add_message(request, constants.SUCCESS, 'Metrica cadastrada com sucesso')
+    return redirect('empresas:empresa', empresa.id)
