@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import PropostaInvestimento
 
-# Register your models here.
+@admin.register(PropostaInvestimento)
+class AdminPropostaInvestimento(admin.ModelAdmin):
+    pass

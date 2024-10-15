@@ -91,6 +91,9 @@ def listar_empresas(request):
     
 
 def empresa(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     empresa = Empresas.objects.get(id=id)
 
     if empresa.user != request.user:
