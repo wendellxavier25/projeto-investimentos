@@ -4,6 +4,7 @@ from .models import PropostaInvestimento
 from django.contrib.messages import constants
 from django.contrib import messages
 from django.http import Http404
+from django.db import transaction
 
 
 def sugestao(request):
@@ -40,15 +41,37 @@ def sugestao(request):
 
 
 def ver_empresa(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     empresa = Empresas.objects.get(id=id)
+    metricas = Metricas.objects.filter(empresa=empresa)
     documentos = Documento.objects.filter(empresa=empresa)
 
-    metricas = Metricas.objects.filter(empresa=empresa)
-    return render(request, 'ver_empresa.html', {'empresa': empresa, 'documentos': documentos, 'metricas': metricas})
+    proposta_investimentos = PropostaInvestimento.objects.filter(empresa=empresa).filter(status='PA')
+
+    percentual_vendido = 0
+    for pi in proposta_investimentos:
+        percentual_vendido += pi.percentual
+
+    limiar = (80 * empresa.percentual_equity) / 100
+    concretizado = False
+
+    if percentual_vendido >= limiar:
+        concretizado = True
+
+
+    percentual_disponivel = empresa.percentual_equity - percentual_vendido
+
+    return render(request, 'ver_empresa.html', {'empresa': empresa, 'documentos': documentos, 'metricas': metricas,
+                                                 'percentual_vendido': int(percentual_vendido), 'concretizado': concretizado, 'percentual_disponivel': percentual_disponivel})
 
 
 
 def realizar_proposta(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     valor = request.POST.get('valor')
     percentual = request.POST.get('percentual')
     empresa = Empresas.objects.get(id=id)
@@ -60,6 +83,9 @@ def realizar_proposta(request, id):
         messages.add_message(request, constants.ERROR, 'Os campos valor e investimentos não podem ficar vazios e nem valores abaixo de 1')
         return redirect('investidores:ver_empresa', id)
 
+    if float(percentual) < 0:
+        messages.add_message(request, constants.ERROR, 'O percentual não pode ser negativo')
+        return redirect('investidores:ver_empresa', id)
 
     total = 0
 
@@ -74,29 +100,34 @@ def realizar_proposta(request, id):
         messages.add_message(request, constants.ERROR, 'Erro tente novamente')
         return redirect('investidores:ver_empresa', id)
     
-
-    valuation = (100 * int(valor)) / int(percentual)
+    
+        valuation = (100 * int(valor)) / int(percentual)
+    
 
     if valuation < (int(empresa.valuation / 2)):
         messages.add_message(request, constants.WARNING, f'Seu valuation proposto foi de R${valuation:.2f}, e deve ser o mínimo R${empresa.valuation:.2f}')
         return redirect('investidores:ver_empresa', id)
 
     try:
-        propostas_investimentos = PropostaInvestimento(
-            valor=valor,
-            percentual=percentual,
-            empresa=empresa,
-            investidor=request.user
-        )
+        with transaction.atomic():
+            propostas_investimentos = PropostaInvestimento(
+                valor=valor,
+                percentual=percentual,
+                empresa=empresa,
+                investidor=request.user
+            )
 
-        propostas_investimentos.save()
-        messages.add_message(request, constants.SUCCESS, 'Proposta enviada com sucesso')
-        return redirect('investidores:assinar_contrato', propostas_investimentos.id)
+            propostas_investimentos.save()
+            messages.add_message(request, constants.SUCCESS, 'Proposta enviada com sucesso')
+            return redirect('investidores:assinar_contrato', propostas_investimentos.id)
     except:
         messages.add_message(request, constants.ERROR, 'Erro no envio de proposta tente novamente')
         return redirect('investidores:assinar_contrato', propostas_investimentos.id)
 
 def assinar_contrato(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     propostas_investimentos = PropostaInvestimento.objects.get(id=id)
     
     if propostas_investimentos.status != 'AS':

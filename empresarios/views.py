@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Empresas, Documento, Metricas
+from investidores.models import PropostaInvestimento
 from django.contrib.messages import constants
 from django.contrib import messages
 
@@ -103,10 +104,30 @@ def empresa(request, id):
 
     if request.method == "GET":
         documentos = Documento.objects.filter(empresa=empresa)
-        return render(request, 'empresa.html', {'empresa': empresa, 'documentos': documentos})
+        propostas_investimentos = PropostaInvestimento.objects.filter(empresa=empresa)
+        
+        percentual_vendido = 0
+        
+
+        for pi in propostas_investimentos:
+            if pi.status == 'PA':
+                percentual_vendido += pi.percentual
+                
+
+        total_captado =  sum(propostas_investimentos.filter(status='PA').values_list('valor', flat=True))
+
+        valuation_atual = (100 * float(total_captado)) / float(percentual_vendido) if percentual_vendido != 0 else 0
+
+        propostas_investimentos_enviada = propostas_investimentos.filter(status='PE')
+
+        return render(request, 'empresa.html', {'empresa': empresa, 'documentos': documentos, 'propostas_investimentos_enviada': propostas_investimentos_enviada, 'percentual_vendido': int(percentual_vendido),
+                                                 'total_captado': total_captado, 'valuation_atual': valuation_atual})
     
 
 def add_doc(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     empresa = Empresas.objects.get(id=id)
     titulo = request.POST.get('titulo')
     arquivo = request.FILES.get('arquivo')
@@ -132,6 +153,9 @@ def add_doc(request, id):
 
 
 def excluir_dc(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     documento = get_object_or_404(Documento, id=id)
 
     if documento.empresa.user != request.user:
@@ -144,6 +168,9 @@ def excluir_dc(request, id):
 
 
 def add_metrica(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
     empresa = Empresas.objects.get(id=id)
     titulo = request.POST.get("titulo")
     valor = request.POST.get("valor")
@@ -153,3 +180,24 @@ def add_metrica(request, id):
 
     messages.add_message(request, constants.SUCCESS, 'Metrica cadastrada com sucesso')
     return redirect('empresas:empresa', empresa.id)
+
+
+
+def gerenciar_proposta(request, id):
+    if not request.user.is_authenticated:
+        return redirect('usuarios:login')
+    
+    acao = request.GET.get('acao')
+    pi = PropostaInvestimento.objects.get(id=id)
+    
+
+    if acao == 'aceitar':
+        messages.add_message(request, constants.SUCCESS, 'Proposta aceita')
+        pi.status = 'PA'
+
+    elif acao == 'negar':
+        messages.add_message(request, constants.SUCCESS, 'Proposta negada')
+        pi.status = 'PR'
+
+    pi.save()
+    return redirect('empresas:empresa', pi.empresa.id)
