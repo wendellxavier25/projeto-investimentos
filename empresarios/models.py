@@ -25,7 +25,7 @@ class Empresas(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     nome = models.CharField(max_length=50)
-    cnpj = models.CharField(max_length=30)
+    cnpj = models.CharField(max_length=14)
     site = models.URLField()
     tempo_existencia = models.CharField(max_length=2, choices=tempo_existencia_choices, default='-6')
     descricao = models.TextField() 

@@ -31,6 +31,9 @@ def cadastrar_empresa(request):
         pitch = request.FILES.get('pitch')
         logo = request.FILES.get('logo')
 
+        if not cnpj or len(cnpj.strip()) != 14 or cnpj.isdigit():
+            messages.add_message(request, constants.ERROR, 'CNPJ contem 12 dígitos')
+            return redirect('empresas:cadastrar_empresa')
 
         if not all([nome, cnpj, site, tempo_existencia, descricao, data_final_captacao, percentual_equity, estagio, area, publico_alvo, valor]):
             messages.add_message(request, constants.ERROR, 'Todos os campos são obrigatórios.')
