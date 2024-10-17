@@ -34,15 +34,17 @@
                     </div>
                     <div class="col-md">
                         <h3>Percentual captado</h3>
-                        <h2>{{ empresa.nome }}</h2>
-                        
+                        <h2>{{ empresa.nome }}</h2>  
+                        <p> <a href="{% url "empresas:dashboard" empresa.id %}"> Dashboard <a/></p>
                     </div>
+
+                   
                     
                 </div>
                 <br><br>
                 <div class="row">
                     <div class="col-md">
-                        <h2 class="titulo2">XYZ Investidores</h2>
+                        <h2 class="titulo2">Investidores</h2>
                         <a href="#" class="sub-fonte">Ver investidores</a>
                     </div>
                     <div class="col-md">

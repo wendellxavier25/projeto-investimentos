@@ -3,7 +3,8 @@ from .models import Empresas, Documento, Metricas
 from investidores.models import PropostaInvestimento
 from django.contrib.messages import constants
 from django.contrib import messages
-
+from django.utils import timezone
+from datetime import timedelta
 
 
 
@@ -123,8 +124,8 @@ def empresa(request, id):
 
         propostas_investimentos_enviada = propostas_investimentos.filter(status='PE')
 
-        return render(request, 'empresa.html', {'empresa': empresa, 'documentos': documentos, 'propostas_investimentos_enviada': propostas_investimentos_enviada, 'percentual_vendido': int(percentual_vendido),
-                                                 'total_captado': total_captado, 'valuation_atual': valuation_atual})
+        return render(request, 'empresa.html', {'empresa': empresa, 'documentos': documentos, 'propostas_investimentos_enviada': propostas_investimentos_enviada, 
+                                                'percentual_vendido': int(percentual_vendido),'total_captado': total_captado, 'valuation_atual': valuation_atual})
     
 
 def add_doc(request, id):
@@ -204,3 +205,32 @@ def gerenciar_proposta(request, id):
 
     pi.save()
     return redirect('empresas:empresa', pi.empresa.id)
+
+
+
+
+def dashboard(request, id):
+    empresa = Empresas.objects.get(id=id)
+    today = timezone.now().date()
+
+    saven_day_ago = today - timedelta(days=6)
+
+    propostas_por_dia = {}
+
+    for i in range(7):
+        day = saven_day_ago + timedelta(days=i)
+
+        propostas = PropostaInvestimento.objects.filter(
+            empresa=empresa,
+            status='PA',
+            data=day
+        )
+
+        total_dia = 0
+        for proposta in propostas:
+            total_dia += proposta.valor
+
+        propostas_por_dia[day.strftime('%d/%m/%Y')] = int(total_dia)
+
+        
+    return render(request, 'dashboard.html', {'labels': list(propostas_por_dia.keys()), 'values': list(propostas_por_dia.values())})
